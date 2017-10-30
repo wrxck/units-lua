@@ -42,8 +42,6 @@ function units.convert(amount, from, to)
         ['_anchors'] = {}
     }
     for measure_type, measure in pairs(units.measures) do
-        from['_anchors'] = measure['_anchors']
-        to['_anchors'] = measure['_anchors']
         for unit_type, unit in pairs(measure) do
             local count = 0
             for k, v in pairs(unit) do
@@ -55,24 +53,29 @@ function units.convert(amount, from, to)
                         from['type'] = 'metric'
                         from['measure'] = measure_type
                         from['unit'] = v
+                        from['_anchors'] = measure._anchors
                     end
                     if to['unit'] == k:lower() or to['unit'] == v['name']['singular']:lower() or to['unit'] == v['name']['plural']:lower() then
                         to['type'] = 'metric'
                         to['measure'] = measure_type
                         to['unit'] = v
+                        to['_anchors'] = measure._anchors
                     end
                 end
-            elseif unit_type == 'imperial' and count >= 1 then
+            end
+            if unit_type == 'imperial' and count >= 1 then
                 for k, v in pairs(unit) do
                     if from['unit'] == k:lower() or from['unit'] == v['name']['singular']:lower() or from['unit'] == v['name']['plural']:lower() then
                         from['type'] = 'imperial'
                         from['measure'] = measure_type
                         from['unit'] = v
+                        from['_anchors'] = measure._anchors
                     end
                     if to['unit'] == k:lower() or to['unit'] == v['name']['singular']:lower() or to['unit'] == v['name']['plural']:lower() then
                         to['type'] = 'imperial'
                         to['measure'] = measure_type
                         to['unit'] = v
+                        to['_anchors'] = measure._anchors
                     end
                 end
             end
@@ -90,11 +93,14 @@ function units.convert(amount, from, to)
         result = result - from['unit']['anchor_shift']
     end
     local unit_type = from['type']
-    if from['_anchors'][tostring(unit_type)].transform then
-        local transform = from['_anchors'][tostring(unit_type)].transform
-        result = transform(result)
-    else
-        result = result * from['_anchors'][tostring(unit_type)].ratio
+    if from['type'] ~= to['type'] then
+        if from['_anchors'][tostring(unit_type)] and from['_anchors'][tostring(unit_type)].transform then
+            local transform = from['_anchors'][tostring(unit_type)].transform
+            result = transform(result)
+        else
+            local ratio = from['_anchors'][tostring(unit_type)]['ratio']
+            result = result * tonumber(ratio)
+        end
     end
     if to['unit']['anchor_shift'] then
         result = result + to['unit']['anchor_shift']
